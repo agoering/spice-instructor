@@ -186,23 +186,23 @@ void lednotes(int note) {
  byte serdata[] = { 0b00000000, 0b00000000 } ;
  
  
- if ( note < NOTE_G2) { // do nothing 
+if ( note < NOTE_G2) { // do nothing 
  } 
- else if ( note < NOTE_C3 ) { bitWrite(serdata[0], 0, 1); }
- else if ( note < NOTE_DS3 ) { bitWrite(serdata[0], 1, 1); }
- else if ( note < NOTE_FS3 ) { bitWrite(serdata[0], 2, 1); }
- else if ( note < NOTE_B3 ) { bitWrite(serdata[0], 3, 1); }
- else if ( note < NOTE_C4 ) { bitWrite(serdata[0], 4, 1); }
- else if ( note < NOTE_CS4 ) { bitWrite(serdata[0], 5, 1); }
- else if ( note < NOTE_D4 ) { bitWrite(serdata[0], 6, 1); }
- else if ( note < NOTE_DS4 ) { bitWrite(serdata[0], 7, 1); }
- else if ( note < NOTE_E4 ) { bitWrite(serdata[1], 0, 1); }
- else if ( note < NOTE_F4 ) { bitWrite(serdata[1], 1, 1); }
- else if ( note < NOTE_FS4 ) { bitWrite(serdata[1], 2, 1); }
- else if ( note < NOTE_G4 ) { bitWrite(serdata[1], 3, 1); }
- else if ( note < NOTE_A4 ) { bitWrite(serdata[1], 4, 1); }
- else if ( note < NOTE_AS4 ) { bitWrite(serdata[1], 5, 1); }
- else if ( note < NOTE_B4 ) { bitWrite(serdata[1], 6, 1); }
+ else if ( note < NOTE_C3 ) { bitWrite(serdata[1], 0, 1); }
+ else if ( note < NOTE_DS3 ) { bitWrite(serdata[1], 1, 1); }
+ else if ( note < NOTE_FS3 ) { bitWrite(serdata[1], 2, 1); }
+ else if ( note < NOTE_B3 ) { bitWrite(serdata[1], 3, 1); }
+ else if ( note < NOTE_C4 ) { bitWrite(serdata[1], 4, 1); }
+ else if ( note < NOTE_CS4 ) { bitWrite(serdata[1], 5, 1); }
+ else if ( note < NOTE_D4 ) { bitWrite(serdata[1], 6, 1); }
+ else if ( note < NOTE_DS4 ) { bitWrite(serdata[1], 7, 1); }
+ else if ( note < NOTE_E4 ) { bitWrite(serdata[0], 0, 1); }
+ else if ( note < NOTE_F4 ) { bitWrite(serdata[0], 1, 1); }
+ else if ( note < NOTE_FS4 ) { bitWrite(serdata[0], 2, 1); }
+ else if ( note < NOTE_G4 ) { bitWrite(serdata[0], 3, 1); }
+ else if ( note < NOTE_A4 ) { bitWrite(serdata[0], 4, 1); }
+ else if ( note < NOTE_AS4 ) { bitWrite(serdata[0], 5, 1); }
+ else if ( note < NOTE_B4 ) { bitWrite(serdata[0], 6, 1); }
  else  { bitWrite(serdata[0], 7, 1); }
  
  shregs.update(serdata); 
