@@ -2,8 +2,10 @@
 
 #include "arrays.h"
 
+int servo_pin = 2;                   // Servo control pin 3
+int servo_length = 5;                // Number of pulses (any duration) required to turn by 90 degrees 
 int spkr_pin = 13;
-Pb_speaker spkr(spkr_pin);                 // Speaker pin 13
+Pb_speaker spkr(spkr_pin);           // Speaker pin 13
 Pb_outputs shregs(10, 12, 11, 5);    // Shift registers (data, clk, latch, number of registers)
 Pb_scoreboard myboard(8, 9);         // Scoreboard (clock, data)
 
@@ -29,6 +31,7 @@ int ii, num_lives = 3, score = 0, score_flag, rgb_tracking[3], rgb_flag;
 int fsr_val, fsr_oldval = 0, fsr_flag = 0, fsr_delay = 200, ir_delay = 1000;
 int ir_thresh = 800, piezo_thresh = 800, ir_val, piezo_val, piezo_delay = 1000;
 int ir_flag = 0, piezo_flag = 0;
+int max_score = 1000;
 
 // Timed events
 Pb_timedevent sideLEDflash(sideflash);
@@ -36,6 +39,7 @@ Pb_timedevent scoreflash(flashscore);
 Pb_timedevent rgb_off(turnoffrgb);
 Pb_timedevent resistorLEDflash(resistorLEDcolors);
 Pb_timedevent fsr_servo(turntheservo);
+Pb_timedevent runservo(servofunc);
 
 // Stopwatch for fsr, ir, and piezo debounce
 Pb_stopwatch mywatch, mywatch_ir, mywatch_piezo;
@@ -48,6 +52,7 @@ void update_music_and_events() {
   rgb_off.update();
   resistorLEDflash.update();
   fsr_servo.update();
+  runservo.update();
   
 }
 
@@ -61,6 +66,8 @@ void setup() {
   // Enable pullup resistors on digital input pins
   digitalWrite(red_pin, HIGH); digitalWrite(green_pin, HIGH); digitalWrite(blue_pin, HIGH);
   digitalWrite(nail_pin, HIGH); digitalWrite(roll_pin, HIGH); digitalWrite(drain_pin, HIGH); 
+  
+  pinMode(servo_pin, OUTPUT); digitalWrite(servo_pin, LOW);
 
   for(ii = 0; ii < 5; ii++) {
     serdata[ii] = 0b00000000;
@@ -69,7 +76,7 @@ void setup() {
   shregs.update(serdata);
 
   rgb_tracking[0] = 0; rgb_tracking[1] = 0; rgb_tracking[2] = 0;
-  delay(500);
+  delay(50);
   spkr.loopstart(beep_vals, beep_time, beep_len);
   myboard.showdisplay(score);
   sideLEDflash.loopstart(sideflashloop, sideflashtime, 2);
@@ -225,19 +232,19 @@ void writeoutputs() {
       spkr.start(coin_vals, coin_time, 3);
       break;
     case 5:
-      sideLEDflash.loopstart(roboto_vals, roboto_time, roboto_len);   
-      spkr.loopstart(roboto_vals, roboto_time, roboto_len);
+      sideLEDflash.start(roboto_vals, roboto_time, roboto_len);   
+      spkr.start(roboto_vals, roboto_time, roboto_len);
       break;
     case 6:
-      sideLEDflash.loopstart(funk_vals, funk_time, funk_len);    
-      spkr.loopstart(funk_vals, funk_time, funk_len);
+      sideLEDflash.start(funk_vals, funk_time, funk_len);    
+      spkr.start(funk_vals, funk_time, funk_len);
       break;
   }
   
   if (drain_flag == 1) {
     shreg_flag = 1;
     bitWrite(serdata[0], 7 - num_lives, 0);
-    spkr.start(life_vals, life_time, life_len);     
+    spkr.start(life_vals, startup_time, life_len);     
     if (num_lives > 0) {
       sideLEDflash.start(sidelifeflash, sidelifetime, 20);   
     } else {
@@ -275,6 +282,15 @@ void writeoutputs() {
   
   if (shreg_flag > 0) { shregs.update(serdata); }
   if (score_flag > 0) { myboard.showdisplay(score); }    
+  
+  if (score >= max_score) { 
+     num_lives = 0; 
+     sideLEDflash.loopstop();   
+     sideLEDflash.start(levelupnotes, leveluptimes, leveluplength);
+     scoreflash.loopstart(scflashvals, scflashtime,2);
+     spkr.loopstop();
+     spkr.start(levelupnotes, leveluptimes, leveluplength); 
+  }
   
 }
 
@@ -369,7 +385,7 @@ void turntheservo(int val) {
   switch(val) {
     case 0:
       // Turn servo on here
-      // Start oneup music here
+      runservo.start(sidelifeflash, sidelifetime, servo_length*2);
       serdata[1] = 0b11111111; serdata[2] = 0b11111111;
       break;
     case 1:
@@ -379,11 +395,16 @@ void turntheservo(int val) {
       serdata[1] = 0b11111111; serdata[2] = 0b11111111;
       break;
     case 3:
-      // Turn servo off here
       serdata[1] = 0b00000000; serdata[2] = 0b00000000;
       break;    
   }
   
   shregs.update(serdata);
+  
+}
+
+void servofunc(int val) {
+   
+ digitalWrite(servo_pin, val); 
   
 }
