@@ -19,11 +19,6 @@ Pb_switch mysw0(100), mysw1(100), mysw2(100), mysw3(100);
 // Declare scoreboard object named myboard
 Pb_scoreboard myboard(clkpin, diopin);
 
-// Use timed events to avoid using delay
-Pb_timedevent scoreboard(changenum);
-int val[] = { 0 };
-int timing[] = { 250 };
-
 //_________________________________________________FLAGS________
 
 // Flags to keep track of button presses
@@ -66,8 +61,6 @@ void setup() {
   num = 0;
   num2 = 0;
   
-  scoreboard.loopstart(val, timing, 1);
-
 }
 
 //____________________________________________THE LOOP___________
@@ -116,21 +109,18 @@ void leftpartition(){
   
 void rightpartition(){
   // Logic for right partition
-    if (flag0 + flag1 + flag2 + flag3 > 0){
+    if (flag0 + flag1 > 0){
     // At least one button has been pressed
-      if (num < 1000){
+      
 
         if (flag0 == 1){
-          num = num + 1;
+          if (num < 99){num = num + 1;}
+          else{num = 0;}
         }
         if (flag1 == 1){
-          num = num + 10;
+          if (num < 89){num = num + 10;}
+          else{num = 0;}
         }
-        if (flag2 == 1){
-          num = num + 100;
-        }
-      }
-      else{num = 0;}
     }
     else{
     // Don't do anything if there's nothing to do!
@@ -143,13 +133,8 @@ void rightpartition(){
 void writeoutputs() {
   
   // Update the scoreboard
-  scoreboard.update();    
-}
-
-void changenum(int ww) {
-
     myboard.postdisplay(num);
     myboard.predisplay(num2);
-    
-}  
+  }
+
 
