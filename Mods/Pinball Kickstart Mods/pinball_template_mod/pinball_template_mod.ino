@@ -5,9 +5,9 @@
 //_________________________________________PIN DEFINITIONS, FLAGS_______
 
 int spkr_pin = 13;
-Pb_speaker spkr(spkr_pin);                 // Speaker 
+Pb_speaker spkr(spkr_pin);                 // Speaker
 Pb_outputs shregs(10, 12, 11, 2);    // Shift registers 
-// (data, clk, latch, number of registers)
+//(data, clk, latch, number of registers)
 Pb_scoreboard myboard(8, 9);         // Scoreboard (clock, data)
 
 byte serdata[2];                     // For the shift registers
@@ -23,7 +23,7 @@ Pb_switch roll_sw(50), drain_sw(50);
 int roll_flag, drain_flag;
 
 // Game specific global variables
-int ii, jj, num_lives = 4, score = 0, score_flag = 0;
+int ii, shregbit = 0, num_lives = 4, score = 0, score_flag = 0;
 int ir_thresh = 800, piezo_thresh = 500, fsr_thresh = 200;
 int ir_val, piezo_val, ir_delay, piezo_delay = 1000;
 int fsr_val, fsr_oldval = 0;
@@ -35,7 +35,7 @@ int ir_flag = 0, piezo_flag = 0, fsr_flag = 0;
 Pb_timedevent LEDflash(flash);
 Pb_timedevent scoreflash(flashscore);
 
-// Stopwatch for ir and piezo debounce
+// Stopwatch for fsr, ir and piezo debounce
 Pb_stopwatch mywatch_fsr, mywatch_ir, mywatch_piezo;
 
 
@@ -72,7 +72,8 @@ void setup() {
   delay(250);
   LEDflash.loopstart(flashloop, flashtime, 2);
   spkr.start(startup_vals, startup_time, startup_len);
-  LEDflash.start(startup_vals, startup_time, startup_len);
+  LEDflash.start(startup_LED_vals, startup_LED_time, 17);
+
   
 }
 
@@ -117,7 +118,7 @@ void dologic() {
   
   score_flag = 0; // Used to decide whether to update scoreboard
 
-  if (roll_flag == 1) { score = score + 1; score_flag = 1; }
+  if (roll_flag == 1) { score = score + 1; score_flag = 1;}
   
   if (ir_val > ir_thresh) { 
     if (ir_flag == 0) {
@@ -145,8 +146,6 @@ void dologic() {
     }
   }
   
-  if (drain_flag == 1) { num_lives = num_lives - 1; score_flag = 4;}
-  
   if (fsr_val == 16) { 
     if (fsr_flag == 0) {
       score = score + 10; score_flag = 5; 
@@ -160,6 +159,8 @@ void dologic() {
     }
   }   
   
+  if (drain_flag == 1) { num_lives = num_lives - 1; score_flag = 4;}
+  
 }
 
 //____________________________________________OUTPUTS___________
@@ -172,6 +173,7 @@ void writeoutputs() {
   switch (score_flag) {
     case 1:
       spkr.start(coin_vals, coin_time, 3);
+      LEDflash.start(shiftpatvals, shiftpattime, 17);
       break;
     case 2:
       spkr.start(coin_vals, coin_time, 15);
@@ -190,29 +192,19 @@ void writeoutputs() {
     } else {
       LEDflash.loopstop();   
       spkr.loopstop();
-      spkr.start(death_vals, death_time, death_len);
+      spkr.start(death_vals, death_time, death_len); 
       serdata[0] = 0b00000000;
       serdata[1] = 0b00000000;
       scoreflash.loopstart(scflashvals, scflashtime,2);
- 
-
     }
   }
-  
-  if (roll_flag > 0) {
-    LEDflash.start(shiftpatvals, shiftpattime, 17);
-    spkr.start(scoreone_vals, scoreone_time, scoreone_len);
-  }
-  
+
   if (fsr_oldval != fsr_val) {
     shreg_flag = 1;
     fsr_oldval = fsr_val;
     fsrtonelight();
   }
-
-  myboard.predisplay(num_lives);
-  myboard.postdisplay(score);
-
+  
   if (shreg_flag > 0) { shregs.update(serdata); }
   if (score_flag > 0) { 
     myboard.predisplay(num_lives);
@@ -225,16 +217,53 @@ void writeoutputs() {
 
 
 void flash(int val) {
-  // Flash the LEDs
+  
+  if (val < 2) { 
+     // array values 0 and 1 cause all LEDs to switch on and off
     if (serdata[0] == 0b00000000) { serdata[0] = 0b11111111; }
     else { serdata[0] = 0b00000000; }
     if (serdata[1] == 0b00000000) { serdata[1] = 0b11111111; }
     else { serdata[1] = 0b00000000; }
-    
-  shregs.update(serdata);
+  }
   
-}
+  else if (val == 3) {
+    // array value 3 turns all LEDs on
+    serdata[0] = 0b11111111;
+    serdata[1] = 0b11111111;
+  }
+  
+  else if (val == 4) {
+    // array value 4 turns all LEDs off
+    serdata[0] = 0b00000000;
+    serdata[1] = 0b00000000;
+  }
+  
+  // array values 5-16 aren't used
 
+  else if (val < 25) {
+    // array values 17-24 turn on red LEDs 0-7
+    shregbit = map(val, 17, 24, 0, 7);
+    bitWrite(serdata[1], shregbit, 1);
+  }
+  else if (val < 33) { 
+    // array values 25-32 turn on blue LEDs 0-7
+    shregbit = map(val, 25, 32, 0, 7);
+    bitWrite(serdata[0], shregbit, 1); 
+  }
+  else if (val < 41) {
+    // array values 33-40 turn off red LEDs 0-7
+    shregbit = map(val, 33, 40, 0, 7);
+    bitWrite(serdata[1], shregbit, 0);
+  }
+  else if (val < 49) { 
+    // array values 41-48 turn on blue LEDs 0-7
+    shregbit = map(val, 41, 48, 0, 7);
+    bitWrite(serdata[0], shregbit, 0); 
+  }
+  
+  shregs.update(serdata);
+
+}
 
 void flashscore(int val) {
  // Flash the scoreboard
